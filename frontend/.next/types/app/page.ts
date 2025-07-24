@@ -1,4 +1,4 @@
-// File: C:\Users\mfuji\Documents\Tech0\step4\C_RFP_WildNyatsby\project\RFP_Miraim_login\frontend\app\page.tsx
+// File: C:\Users\yuya2\tech0\STEP4\RFP_Miraim_login_2\frontend\app\page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
