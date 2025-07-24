@@ -221,7 +221,7 @@ export default function AuthChat() {
   const progress = getStepProgress(currentStep, mode);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 flex flex-col relative">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-orange-100 p-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
@@ -255,7 +255,7 @@ export default function AuthChat() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden pb-32"> {/* ← 下部に余白を追加（高さは入力欄分、必要に応じて調整） */}
         <div className="max-w-2xl mx-auto h-full flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
@@ -281,8 +281,8 @@ export default function AuthChat() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-orange-100">
-            <form onSubmit={handleSubmit} className="space-y-2">
+          <div className="fixed bottom-0 left-0 w-full z-10 p-4 bg-white/80 backdrop-blur-sm border-t border-orange-100"> {/* ← 画面下部に固定 */}
+            <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto">
               {validationError && (
                 <div className="text-red-500 text-sm bg-red-50 p-2 rounded-lg">
                   {validationError}
