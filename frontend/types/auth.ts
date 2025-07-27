@@ -5,11 +5,14 @@ export type AuthStep =
   | 'name'
   | 'email'
   | 'password'
-  | 'age'
-  | 'occupation'
+  | 'birthdate'
   | 'konkatsuStatus'
+  | 'optional_confirm'
+  | 'occupation'
+  | 'birthplace'
   | 'location'
   | 'hobbies'
+  | 'holiday_style'
   | 'email_confirm'
   | 'complete';
 
@@ -17,11 +20,13 @@ export interface UserData {
   name?: string;
   email?: string;
   password?: string;
-  age?: number;
-  occupation?: string;
+  birthdate?: string;
   konkatsuStatus?: string;
+  occupation?: string;
+  birthplace?: string;
   location?: string;
   hobbies?: string;
+  holidayStyle?: string;
 }
 
 export interface Message {
