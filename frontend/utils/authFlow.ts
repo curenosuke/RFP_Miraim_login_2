@@ -44,25 +44,43 @@ export function validateInput(step: AuthStep, input: string): ValidationResult {
       }
       return { isValid: true };
 
-    case 'age':
-      const age = parseInt(trimmedInput);
-      if (isNaN(age)) {
-        return { isValid: false, error: '年齢は数字で入力してください。' };
+    case 'birthdate':
+      if (!trimmedInput) {
+        return { isValid: false, error: '生年月日を入力してください。' };
       }
-      if (age < 18) {
+      
+      // 生年月日の形式チェック（YYYY-MM-DD形式）
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(trimmedInput)) {
+        return { 
+          isValid: false, 
+          error: '生年月日は「YYYY-MM-DD」の形式で入力してください。\n\n例：1990-01-15' 
+        };
+      }
+      
+      // 日付の妥当性チェック
+      const birthDate = new Date(trimmedInput);
+      if (isNaN(birthDate.getTime())) {
+        return { isValid: false, error: '正しい生年月日を入力してください。' };
+      }
+      
+      // 現在の日付から年齢を計算
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+      
+      // 誕生日がまだ来ていない場合は年齢を1引く
+      const actualAge = (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) ? age - 1 : age;
+      
+      if (actualAge < 18) {
         return { 
           isValid: false, 
           error: 'ありがとうございます。\n申し訳ございませんが、Miraimは18歳以上の方にご利用いただいております。\n\n18歳になられましたら、ぜひまたお越しください。\nお待ちしております！' 
         };
       }
-      if (age > 100) {
-        return { isValid: false, error: '年齢を正しく入力してください。' };
-      }
-      return { isValid: true };
-
-    case 'occupation':
-      if (!trimmedInput) {
-        return { isValid: false, error: 'ご職業を入力してください。' };
+      if (actualAge > 100) {
+        return { isValid: false, error: '生年月日を正しく入力してください。' };
       }
       return { isValid: true };
 
@@ -77,6 +95,67 @@ export function validateInput(step: AuthStep, input: string): ValidationResult {
           isValid: false, 
           error: '1️⃣、2️⃣、3️⃣のいずれかの番号、または\n「初心者」「経験あり」「再チャレンジ」で教えてください。' 
         };
+      }
+      return { isValid: true };
+
+    case 'optional_confirm':
+      const yesInputs = ['はい', 'yes', 'y', '1', '入力', 'する'];
+      const noInputs = ['いいえ', 'no', 'n', '2', '入力しない', 'しない'];
+      
+      const isYes = yesInputs.some(input => 
+        trimmedInput.toLowerCase().includes(input.toLowerCase())
+      );
+      const isNo = noInputs.some(input => 
+        trimmedInput.toLowerCase().includes(input.toLowerCase())
+      );
+      
+      if (!isYes && !isNo) {
+        return { 
+          isValid: false, 
+          error: '「はい」または「いいえ」でお答えください。' 
+        };
+      }
+      return { isValid: true };
+
+    case 'occupation':
+      if (!trimmedInput) {
+        return { isValid: false, error: 'ご職業を入力してください。' };
+      }
+      return { isValid: true };
+
+    case 'birthplace':
+      if (!trimmedInput) {
+        return { isValid: false, error: '出身地を入力してください。' };
+      }
+      if (trimmedInput.length < 1 || trimmedInput.length > 50) {
+        return { isValid: false, error: '出身地は1文字以上50文字以下で入力してください。' };
+      }
+      return { isValid: true };
+
+    case 'location':
+      if (!trimmedInput) {
+        return { isValid: false, error: '現在の居住地を入力してください。' };
+      }
+      if (trimmedInput.length < 1 || trimmedInput.length > 50) {
+        return { isValid: false, error: '居住地は1文字以上50文字以下で入力してください。' };
+      }
+      return { isValid: true };
+
+    case 'hobbies':
+      if (!trimmedInput) {
+        return { isValid: false, error: '趣味・興味を入力してください。' };
+      }
+      if (trimmedInput.length < 1 || trimmedInput.length > 100) {
+        return { isValid: false, error: '趣味・興味は1文字以上100文字以下で入力してください。' };
+      }
+      return { isValid: true };
+
+    case 'holiday_style':
+      if (!trimmedInput) {
+        return { isValid: false, error: '休日の過ごし方を入力してください。' };
+      }
+      if (trimmedInput.length < 1 || trimmedInput.length > 100) {
+        return { isValid: false, error: '休日の過ごし方は1文字以上100文字以下で入力してください。' };
       }
       return { isValid: true };
 
@@ -104,12 +183,23 @@ export function getNextStep(currentStep: AuthStep, mode: AuthMode): AuthStep | n
     case 'email':
       return 'password';
     case 'password':
-      return 'age';
-    case 'age':
-      return 'occupation';
-    case 'occupation':
+      return 'birthdate';
+    case 'birthdate':
       return 'konkatsuStatus';
     case 'konkatsuStatus':
+      return 'optional_confirm';
+    case 'optional_confirm':
+      // ユーザーの選択に基づいて次のステップを決定
+      return 'occupation'; // 実際の選択はAuthChat.tsxで処理
+    case 'occupation':
+      return 'birthplace';
+    case 'birthplace':
+      return 'location';
+    case 'location':
+      return 'hobbies';
+    case 'hobbies':
+      return 'holiday_style';
+    case 'holiday_style':
       return 'complete';
     default:
       return null;
@@ -123,10 +213,10 @@ export function getStepProgress(currentStep: AuthStep, mode: AuthMode): StepProg
     return current > 0 ? { current: Math.min(current, 2), total: 2 } : null;
   }
 
-  // Register mode
-  const steps = ['name', 'email', 'password', 'age', 'occupation', 'konkatsuStatus'];
-  const current = steps.indexOf(currentStep) + 1;
-  return current > 0 ? { current: Math.min(current, 6), total: 6 } : null;
+  // Register mode - 必須項目のみで進捗を計算
+  const requiredSteps = ['name', 'email', 'password', 'birthdate', 'konkatsuStatus'];
+  const current = requiredSteps.indexOf(currentStep) + 1;
+  return current > 0 ? { current: Math.min(current, 5), total: 5 } : null;
 }
 
 export function getStepTitle(step: AuthStep): string {
@@ -137,12 +227,14 @@ export function getStepTitle(step: AuthStep): string {
       return 'メールアドレス';
     case 'password':
       return 'パスワード';
-    case 'age':
-      return '年齢';
-    case 'occupation':
-      return 'ご職業';
+    case 'birthdate':
+      return '生年月日';
     case 'konkatsuStatus':
       return '婚活状況';
+    case 'occupation':
+      return 'ご職業';
+    case 'birthplace':
+      return '出身地';
     case 'location':
       return 'お住まい';
     case 'hobbies':
