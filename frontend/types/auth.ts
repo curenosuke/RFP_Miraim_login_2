@@ -14,6 +14,7 @@ export type AuthStep =
   | 'hobbies'
   | 'holiday_style'
   | 'email_confirm'
+  | 'password_confirm'
   | 'complete';
 
 export interface UserData {
