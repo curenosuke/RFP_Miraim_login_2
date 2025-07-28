@@ -46,7 +46,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app = FastAPI(title="Conversation Login API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -109,17 +109,31 @@ def login(request: LoginInfo, response: Response):
     else:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-# # JWT検証
-# def verify_token(token: str):
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         return payload
-#     except JWTError:
-#         return None
+def decode_JWT(request: Request):
+    # cookie上のuser_idからユーザー情報を取得
+    token = request.cookies.get("access_token")
+    if not token:
+        print("no token")
+        raise HTTPException(status_code=401, detail="認証トークンがありません")
+
+    try:
+        print("now decoding")
+        payload = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
+        print("decoded")
+        id_payload = payload["user_id"]
+    except JWTError:
+        print("JWTError")
+        raise HTTPException(status_code=401, detail="トークンが無効または期限切れです")
+    
+    user_info = crud.get_user_by_id(id_payload)
+    if not user_info:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    return user_info
 
 @app.get("/me")
-def get_me():
-    pass # ユーザー情報の取得
+def get_myInfo(user: dict = Depends(decode_JWT)):
+    print(user["location"])
+    return user
 
 # @app.post("/login", response_model=TokenResponse)
 # @limiter.limit("5/minute")

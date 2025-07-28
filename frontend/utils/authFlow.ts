@@ -168,7 +168,7 @@ export function getNextStep(currentStep: AuthStep, mode: AuthMode): AuthStep | n
   if (mode === 'login') {
     switch (currentStep) {
       case 'email_confirm':
-        return 'complete';
+        return 'password_confirm';
       default:
         return null;
     }

@@ -53,3 +53,32 @@ def find_user(email, password):
 
     session.close()
     return {"id": user_id} if user_id else None
+
+def get_user_by_id(user_id):
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    query = select(Users).where(Users.id == user_id)
+
+    try:
+        with session.begin():
+            user_info = session.execute(query).scalar_one_or_none()
+    except sqlalchemy.exc.IntegrityError:
+        print("一意制約違反により、挿入に失敗しました")
+
+    user_dict = {
+        "id": user_info.id,
+        "name": user_info.name,
+        "email": user_info.email,
+        "birth_date": user_info.birth_date.isoformat() if user_info.birth_date else None,
+        "konkatsu_status": user_info.konkatsu_status,
+        "occupation": user_info.occupation,
+        "birth_place": user_info.birth_place,
+        "location": user_info.location,
+        "hobbies": user_info.hobbies,
+        "weekend_activity": user_info.weekend_activity,
+        "created_at": user_info.created_at.isoformat(),
+        "updated_at": user_info.updated_at.isoformat()
+    }
+    session.close()
+    return user_dict

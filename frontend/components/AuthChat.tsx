@@ -7,6 +7,8 @@ import ProgressIndicator from './ProgressIndicator';
 import InputField from './InputField';
 import { AuthStep, AuthMode, UserData, Message } from '@/types/auth';
 import { validateInput, getNextStep, getStepProgress } from '@/utils/authFlow';
+import login from './login';
+import { useRouter } from 'next/navigation';
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -29,6 +31,8 @@ export default function AuthChat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     scrollToBottom();
@@ -98,7 +102,13 @@ export default function AuthChat() {
       case 'email':
         updatedUserData.email = trimmedValue;
         break;
+      case 'email_confirm':
+        updatedUserData.email = trimmedValue;
+        break;
       case 'password':
+        updatedUserData.password = trimmedValue;
+        break;
+      case 'password_confirm':
         updatedUserData.password = trimmedValue;
         break;
       case 'birthdate':
@@ -198,20 +208,27 @@ export default function AuthChat() {
         return `${input}で休日を過ごされるんですね！素敵です 🌟\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。\n\n早速、Miraimの機能を使ってみませんか？`;
       case 'email_confirm':
         return `メールアドレスを確認しました。\n\nパスワードを入力してください。`;
+      case 'password_confirm':
+        return 'ありがとうございます、パスワードを確認しました!'
       default:
         return 'ありがとうございます！';
     }
   };
 
-  const handleComplete = (finalUserData: UserData) => {
-    console.log('Registration completed:', finalUserData);
+  const handleComplete = async (finalUserData: UserData) => {
+    const email = finalUserData.email;
+    const password = finalUserData.password;
+    const res = await login(email, password);
     
-    setTimeout(() => {
-      addMessage({
-        type: 'system',
-        content: '登録完了 - メイン画面に移動'
-      });
-    }, 2000);
+    if (res){
+      router.push("/mypage");
+    }
+    // setTimeout(() => {
+    //   addMessage({
+    //     type: 'system',
+    //     content: '登録完了 - メイン画面に移動'
+    //   });
+    // }, 2000);
   };
 
   const handleModeSwitch = () => {
