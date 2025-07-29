@@ -9,7 +9,7 @@ export default async function register(userData){
         birth_place:      userData.birthplace ?? "",
         location:         userData.location ?? "",
         hobbies:          userData.hobbies ?? "",
-        weekend_activity: userData.holidayStyle ?? "",    // holidayStyle → weekend_activity
+        weekend_activity: userData.holidayStyle ?? "",
     };
     console.log(`try to register with ${JSON.stringify(payload)}`);
     const res = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT+'/register', 
