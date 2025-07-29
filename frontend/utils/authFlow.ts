@@ -213,10 +213,21 @@ export function getStepProgress(currentStep: AuthStep, mode: AuthMode): StepProg
     return current > 0 ? { current: Math.min(current, 2), total: 2 } : null;
   }
 
-  // Register mode - 必須項目のみで進捗を計算
+  // Register mode - 婚活ステータスまでで完了とする
   const requiredSteps = ['name', 'email', 'password', 'birthdate', 'konkatsuStatus'];
-  const current = requiredSteps.indexOf(currentStep) + 1;
-  return current > 0 ? { current: Math.min(current, 5), total: 5 } : null;
+  const current = requiredSteps.indexOf(currentStep);
+  
+  // 最初の名前入力時点で0%から始まり、各ステップで20%ずつ進む
+  if (current >= 0) {
+    return { current: current, total: 5 };
+  }
+  
+  // konkatsuStatus完了後も進捗バーを表示し続ける（optional_confirmまで）
+  if (currentStep === 'optional_confirm') {
+    return { current: 5, total: 5 };
+  }
+  
+  return null;
 }
 
 export function getStepTitle(step: AuthStep): string {
