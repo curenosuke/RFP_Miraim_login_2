@@ -8,6 +8,7 @@ import InputField from './InputField';
 import { AuthStep, AuthMode, UserData, Message } from '@/types/auth';
 import { validateInput, getNextStep, getStepProgress } from '@/utils/authFlow';
 import login from './login';
+import register from './register';
 import { useRouter } from 'next/navigation';
 
 const INITIAL_MESSAGES: Message[] = [
@@ -216,6 +217,11 @@ export default function AuthChat() {
   };
 
   const handleComplete = async (finalUserData: UserData) => {
+    if (mode == 'register'){
+      const res = await register(finalUserData);
+      return;
+    }
+
     const email = finalUserData.email;
     const password = finalUserData.password;
     const res = await login(email, password);
