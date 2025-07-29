@@ -7,6 +7,9 @@ import ProgressIndicator from './ProgressIndicator';
 import InputField from './InputField';
 import { AuthStep, AuthMode, UserData, Message } from '@/types/auth';
 import { validateInput, getNextStep, getStepProgress } from '@/utils/authFlow';
+import login from './login';
+import register from './register';
+import { useRouter } from 'next/navigation';
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -29,6 +32,8 @@ export default function AuthChat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     scrollToBottom();
@@ -98,29 +103,63 @@ export default function AuthChat() {
       case 'email':
         updatedUserData.email = trimmedValue;
         break;
+      case 'email_confirm':
+        updatedUserData.email = trimmedValue;
+        break;
       case 'password':
         updatedUserData.password = trimmedValue;
         break;
-      case 'age':
-        updatedUserData.age = parseInt(trimmedValue);
+      case 'password_confirm':
+        updatedUserData.password = trimmedValue;
+        break;
+      case 'birthdate':
+        updatedUserData.birthdate = trimmedValue;
+        break;
+      case 'konkatsuStatus':
+        updatedUserData.konkatsuStatus = trimmedValue;
+        break;
+      case 'optional_confirm':
+        // ユーザーの選択を保存（実際の処理は別途実装）
         break;
       case 'occupation':
         updatedUserData.occupation = trimmedValue;
         break;
-      case 'konkatsuStatus':
-        updatedUserData.konkatsuStatus = trimmedValue;
+      case 'birthplace':
+        updatedUserData.birthplace = trimmedValue;
+        break;
+      case 'location':
+        updatedUserData.location = trimmedValue;
+        break;
+      case 'hobbies':
+        updatedUserData.hobbies = trimmedValue;
+        break;
+      case 'holiday_style':
+        updatedUserData.holidayStyle = trimmedValue;
         break;
     }
     setUserData(updatedUserData);
 
     // Get next step and response
     const nextStep = getNextStep(currentStep, mode);
-    const response = getStepResponse(currentStep, trimmedValue, nextStep);
+    const response = getStepResponse(currentStep, trimmedValue, nextStep, updatedUserData);
 
     setTimeout(() => {
       addBotMessage(response);
       if (nextStep) {
-        setCurrentStep(nextStep);
+        // optional_confirmステップの特別処理
+        if (currentStep === 'optional_confirm') {
+          const isYes = ['はい', 'yes', 'y', '1', '入力', 'する'].some(option => 
+            trimmedValue.toLowerCase().includes(option.toLowerCase())
+          );
+          if (isYes) {
+            setCurrentStep('occupation');
+          } else {
+            // 任意項目をスキップして登録完了
+            handleComplete(updatedUserData);
+          }
+        } else {
+          setCurrentStep(nextStep);
+        }
       } else {
         // Complete registration/login
         handleComplete(updatedUserData);
@@ -128,18 +167,17 @@ export default function AuthChat() {
     }, 1000);
   };
 
-  const getStepResponse = (step: AuthStep, input: string, nextStep: AuthStep | null): string => {
+  const getStepResponse = (step: AuthStep, input: string, nextStep: AuthStep | null, userData: UserData): string => {
     switch (step) {
       case 'name':
         return `${input}さん、よろしくお願いします！\n素敵なお名前ですね ✨\n\n次に、ログインで使用するメールアドレスを教えてください。`;
       case 'email':
         return `ありがとうございます！\nメールアドレスを確認しました 📧\n\n続いて、安全なパスワードを設定しましょう。\n以下の条件を満たすパスワードをお願いします：\n• 8文字以上\n• 英字と数字を含む`;
       case 'password':
-        return `とても良いパスワードです！セキュリティもばっちりですね 🔒\n\n年齢を教えていただけますか？\n（マッチングの参考にさせていただきます）`;
-      case 'age':
-        return `${input}歳ですね！\n\nお仕事は何をされていますか？\n（例：会社員、エンジニア、営業など）`;
-      case 'occupation':
-        return `${input}のお仕事、素晴らしいですね！👨‍💻\n\n最後に、現在の婚活状況を教えてください：\n1️⃣ 婚活初心者です\n2️⃣ 婚活経験があります\n3️⃣ 再チャレンジです\n\n番号または内容で答えてください。`;
+        return `とても良いパスワードです！セキュリティもばっちりですね 🔒\n\n生年月日を教えていただけますか？\n（マッチングの参考にさせていただきます）\n\n形式：YYYY-MM-DD\n例：1990-01-15`;
+      case 'birthdate':
+        return `${input}生まれですね！\n\n最後に、現在の婚活状況を教えてください：\n1️⃣ 婚活初心者です\n2️⃣ 婚活経験があります\n3️⃣ 再チャレンジです\n\n番号または内容で答えてください。`;
+
       case 'konkatsuStatus':
         let status = '';
         if (input === '1' || input.includes('初心者')) {
@@ -149,23 +187,54 @@ export default function AuthChat() {
         } else {
           status = '再チャレンジですね！\n新しい気持ちで頑張りましょう 🌟';
         }
-        return `${status}\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。\n\n早速、Miraimの機能を使ってみませんか？`;
+        return `${status}\n\n以降の項目は任意ですが、よりパーソナライズされた提案・練習ができますよ！\n\n入力しますか？\n\n「はい」または「いいえ」でお答えください。`;
+      case 'optional_confirm':
+        const isYes = ['はい', 'yes', 'y', '1', '入力', 'する'].some(option => 
+          input.toLowerCase().includes(option.toLowerCase())
+        );
+        if (isYes) {
+          return 'ありがとうございます！\n\nまずは、お仕事を教えてください。\n（例：会社員、エンジニア、営業など）';
+        } else {
+          return `承知いたしました！\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。\n\n早速、Miraimの機能を使ってみませんか？`;
+        }
+      case 'occupation':
+        return `${input}のお仕事、素晴らしいですね！👨‍💻\n\n出身地を教えてください。\n（例：東京都、大阪府、北海道など）`;
+      case 'birthplace':
+        return `${input}！素敵な場所です 🌟\n\n現在の居住地を教えてください。\n（例：東京都渋谷区、大阪府大阪市など）`;
+      case 'location':
+        return `${input}にお住まいなんですね！\n\n趣味・興味を教えてください。\n（例：読書、旅行、料理、スポーツなど）`;
+      case 'hobbies':
+        return `${input}がお好きなんですね！素敵な趣味です ✨\n\n最後に、休日の過ごし方を教えてください。\n（例：家でゆっくり、友達と遊ぶ、趣味に没頭など）`;
+      case 'holiday_style':
+        return `${input}で休日を過ごされるんですね！素敵です 🌟\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。\n\n早速、Miraimの機能を使ってみませんか？`;
       case 'email_confirm':
         return `メールアドレスを確認しました。\n\nパスワードを入力してください。`;
+      case 'password_confirm':
+        return 'ありがとうございます、パスワードを確認しました!'
       default:
         return 'ありがとうございます！';
     }
   };
 
-  const handleComplete = (finalUserData: UserData) => {
-    console.log('Registration completed:', finalUserData);
+  const handleComplete = async (finalUserData: UserData) => {
+    if (mode == 'register'){
+      const res = await register(finalUserData);
+      return;
+    }
+
+    const email = finalUserData.email;
+    const password = finalUserData.password;
+    const res = await login(email, password);
     
-    setTimeout(() => {
-      addMessage({
-        type: 'system',
-        content: '登録完了 - メイン画面に移動'
-      });
-    }, 2000);
+    if (res){
+      router.push("/mypage");
+    }
+    // setTimeout(() => {
+    //   addMessage({
+    //     type: 'system',
+    //     content: '登録完了 - メイン画面に移動'
+    //   });
+    // }, 2000);
   };
 
   const handleModeSwitch = () => {
@@ -221,7 +290,7 @@ export default function AuthChat() {
   const progress = getStepProgress(currentStep, mode);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-pink-50 flex flex-col relative">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-orange-100 p-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
@@ -255,7 +324,7 @@ export default function AuthChat() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden pb-32"> {/* ← 下部に余白を追加（高さは入力欄分、必要に応じて調整） */}
         <div className="max-w-2xl mx-auto h-full flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
@@ -281,8 +350,8 @@ export default function AuthChat() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-orange-100">
-            <form onSubmit={handleSubmit} className="space-y-2">
+          <div className="fixed bottom-0 left-0 w-full z-10 p-4 bg-white/80 backdrop-blur-sm border-t border-orange-100"> {/* ← 画面下部に固定 */}
+            <form onSubmit={handleSubmit} className="space-y-2 max-w-2xl mx-auto">
               {validationError && (
                 <div className="text-red-500 text-sm bg-red-50 p-2 rounded-lg">
                   {validationError}
