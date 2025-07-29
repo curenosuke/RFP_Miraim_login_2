@@ -93,21 +93,47 @@ def create_JWT(id: str):
 
 @app.post("/login")
 def login(request: LoginInfo, response: Response):
-    user_id = crud.find_user(request.email, request.password)
-    if user_id:
-        token = create_JWT(user_id["id"])
-        response.set_cookie(
-            key="access_token",
-            value=token,
-            httponly=True,
-            samesite="Lax",
-            secure=False,  # 本番環境では True + HTTPS
-            max_age=3600,
-            path ="/"
-        )
-        return {"user_id": user_id["id"]}
-    else:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    # 1) メールアドレスでユーザー情報を取得
+    user = crud.get_user_by_email(request.email)
+    if not user:
+        # メールアドレスが存在しない
+        raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
+
+    # 2) ハッシュと平文パスワードを照合
+    if not pwd_context.verify(request.password, user.password_hash):
+        # パスワード不一致
+        raise HTTPException(status_code=401, detail="メールアドレスまたはパスワードが正しくありません")
+
+    # 3) OK なら JWT を作ってクッキーにセット
+    token = create_JWT(user.id)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        samesite="Lax",
+        secure=False,  # 本番は True + HTTPS
+        max_age=3600,
+        path="/"
+    )
+    return {"user_id": user.id}
+
+# @app.post("/login")
+# def login(request: LoginInfo, response: Response):
+#     user_id = crud.find_user(request.email, request.password)
+#     if user_id:
+#         token = create_JWT(user_id["id"])
+#         response.set_cookie(
+#             key="access_token",
+#             value=token,
+#             httponly=True,
+#             samesite="Lax",
+#             secure=False,  # 本番環境では True + HTTPS
+#             max_age=3600,
+#             path ="/"
+#         )
+#         return {"user_id": user["id"]}
+#     else:
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 def decode_JWT(request: Request):
     # cookie上のuser_idからユーザー情報を取得
