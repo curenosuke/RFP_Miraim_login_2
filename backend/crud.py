@@ -54,6 +54,14 @@ def find_user(email, password):
     session.close()
     return {"id": user_id} if user_id else None
 
+def get_user_by_email(email: str) -> Users | None:
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    try:
+        return session.query(Users).filter(Users.email == email).one_or_none()
+    finally:
+        session.close()
+
 def get_user_by_id(user_id):
     Session = sessionmaker(bind=engine)
     session = Session()
