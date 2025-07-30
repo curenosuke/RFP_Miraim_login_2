@@ -8,5 +8,15 @@ export default async function login(email, password){
             body: JSON.stringify({email, password}),
         }
     );
-    return res.json();
+    
+    if (res.ok) {
+        const data = await res.json();
+        return { success: true, data };
+    } else {
+        const errorData = await res.json();
+        return { 
+            success: false, 
+            error: errorData.detail || 'ログインに失敗しました'
+        };
+    }
 }

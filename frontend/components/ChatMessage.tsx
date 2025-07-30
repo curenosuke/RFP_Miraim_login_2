@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle, User } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Message } from '@/types/auth';
 
 interface ChatMessageProps {
@@ -74,12 +74,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           })}
         </div>
       </div>
-
-      {!isBot && (
-        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-          <User className="w-4 h-4 text-gray-600" />
-        </div>
-      )}
     </div>
   );
 }

@@ -129,6 +129,28 @@ export default function AuthChat() {
       return;
     }
 
+    // パスワード確認ステップでの特別な処理
+    if (currentStep === 'password_confirm') {
+      const forgotKeywords = ['忘れた', 'わすれた', 'forgot', 'forget'];
+      const isForgotPassword = forgotKeywords.some(keyword => 
+        trimmedValue.toLowerCase().includes(keyword.toLowerCase())
+      );
+      
+      if (isForgotPassword) {
+        // パスワードを忘れた場合の処理
+        setTimeout(() => {
+          addBotMessage('大丈夫です！よくあることです 😊\n\nパスワードリセットのメールをお送りします。\nメールをご確認いただき、新しいパスワードを設定してください。');
+        }, 500);
+        setTimeout(() => {
+          addBotMessage('しばらくお待ちください...');
+        }, 3000);
+        setTimeout(() => {
+          addBotMessage('メールを送信しました！📧\nメールボックスをご確認ください。');
+        }, 5000);
+        return;
+      }
+    }
+
     // Store user data
     const updatedUserData = { ...userData };
     switch (currentStep) {
@@ -179,7 +201,10 @@ export default function AuthChat() {
     const response = getStepResponse(currentStep, trimmedValue, nextStep, updatedUserData);
 
     setTimeout(() => {
-      addBotMessage(response);
+      // 空文字でない場合のみメッセージを表示
+      if (response.trim()) {
+        addBotMessage(response);
+      }
       if (nextStep) {
         // optional_confirmステップの特別処理
         if (currentStep === 'optional_confirm') {
@@ -247,7 +272,7 @@ export default function AuthChat() {
         if (isYes) {
           return 'ありがとうございます！\n\nまずは、お仕事を教えてください。\n（例：会社員、エンジニア、営業など）';
         } else {
-          return `承知いたしました！\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。\n\n早速、Miraimの機能を使ってみませんか？`;
+          return `承知いたしました！\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。`;
         }
       case 'occupation':
         // 職業に応じたメッセージを生成
@@ -282,11 +307,11 @@ export default function AuthChat() {
       case 'hobbies':
         return `${input}がお好きなんですね！素敵な趣味です ✨\n\n最後に、休日の過ごし方を教えてください。\n（例：家でゆっくり、友達と遊ぶ、趣味に没頭など）`;
       case 'holiday_style':
-        return `${input}！素敵な休日の過ごし方です 🌟\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。\n\n早速、Miraimの機能を使ってみませんか？`;
+        return `${input}！素敵な休日の過ごし方です 🌟\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。`;
       case 'email_confirm':
         return `メールアドレスを確認しました。\n\nパスワードを入力してください。`;
       case 'password_confirm':
-        return 'ありがとうございます、パスワードを確認しました!'
+        return ''  // ログイン処理中なので空文字を返す
       default:
         return 'ありがとうございます！';
     }
@@ -302,15 +327,21 @@ export default function AuthChat() {
     const password = finalUserData.password;
     const res = await login(email, password);
     
-    if (res){
-      router.push("/mypage");
+    if (res.success){
+      // ログイン成功時のメッセージを表示
+      setTimeout(() => {
+        addBotMessage('ありがとうございます、パスワードを確認しました!');
+      }, 500);
+      setTimeout(() => {
+        router.push("/mypage");
+      }, 3000);
+    } else {
+      // ログイン失敗時のメッセージを表示
+      setTimeout(() => {
+        addBotMessage(`あら、パスワードが一致しないようです 😅\n\nもう一度確認してお試しください。\nパスワードを忘れてしまった場合は、「忘れた」と教えてくださいね。`);
+        setCurrentStep('password_confirm');
+      }, 500);
     }
-    // setTimeout(() => {
-    //   addMessage({
-    //     type: 'system',
-    //     content: '登録完了 - メイン画面に移動'
-    //   });
-    // }, 2000);
   };
 
   const handleModeSwitch = () => {
