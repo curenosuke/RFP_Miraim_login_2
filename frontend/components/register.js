@@ -20,5 +20,15 @@ export default async function register(userData){
             body: JSON.stringify(payload),
         }
     );
-    return res.json();
+    
+    if (res.ok) {
+        const data = await res.json();
+        return { success: true, data };
+    } else {
+        const errorData = await res.json();
+        return { 
+            success: false, 
+            error: errorData.detail || '登録に失敗しました'
+        };
+    }
 }
