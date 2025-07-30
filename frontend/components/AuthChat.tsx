@@ -101,26 +101,48 @@ export default function AuthChat() {
   };
 
   const addUserMessage = (content: string) => {
-    addMessage({ type: 'user', content });
+    // パスワード入力時はマスク表示
+    let displayContent = content;
+    if (currentStep === 'password' || currentStep === 'password_confirm') {
+      displayContent = '●'.repeat(content.length);
+    }
+    
+    addMessage({ type: 'user', content: displayContent });
     // ユーザーメッセージ追加後もスクロール
     setTimeout(() => {
       scrollToBottom();
     }, 100);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+  const handleButtonClick = (value: string) => {
+    // ボタンクリック時の処理
+    let inputValue = '';
+    switch (value) {
+      case '1':
+        inputValue = '初心者';
+        break;
+      case '2':
+        inputValue = '経験あり';
+        break;
+      case '3':
+        inputValue = '再チャレンジ';
+        break;
+      default:
+        inputValue = value;
+    }
+    
+    // ユーザーメッセージを追加
+    addUserMessage(inputValue);
+    
+    // 通常の処理フローを実行
+    setTimeout(() => {
+      handleInputProcessing(inputValue);
+    }, 500);
+  };
 
-    const trimmedValue = inputValue.trim();
-    setInputValue('');
-    setValidationError('');
-
-    // Add user message
-    addUserMessage(trimmedValue);
-
+  const handleInputProcessing = (inputValue: string) => {
     // Validate input
-    const validation = validateInput(currentStep, trimmedValue);
+    const validation = validateInput(currentStep, inputValue);
     if (!validation.isValid) {
       setValidationError(validation.error || '');
       setTimeout(() => {
@@ -133,7 +155,7 @@ export default function AuthChat() {
     if (currentStep === 'password_confirm') {
       const forgotKeywords = ['忘れた', 'わすれた', 'forgot', 'forget'];
       const isForgotPassword = forgotKeywords.some(keyword => 
-        trimmedValue.toLowerCase().includes(keyword.toLowerCase())
+        inputValue.toLowerCase().includes(keyword.toLowerCase())
       );
       
       if (isForgotPassword) {
@@ -155,50 +177,67 @@ export default function AuthChat() {
     const updatedUserData = { ...userData };
     switch (currentStep) {
       case 'name':
-        updatedUserData.name = trimmedValue;
+        updatedUserData.name = inputValue;
         break;
       case 'email':
-        updatedUserData.email = trimmedValue;
+        updatedUserData.email = inputValue;
         break;
       case 'email_confirm':
-        updatedUserData.email = trimmedValue;
+        updatedUserData.email = inputValue;
         break;
       case 'password':
-        updatedUserData.password = trimmedValue;
+        updatedUserData.password = inputValue;
         break;
       case 'password_confirm':
-        updatedUserData.password = trimmedValue;
+        updatedUserData.password = inputValue;
         break;
       case 'birthdate':
-        updatedUserData.birthdate = trimmedValue;
+        updatedUserData.birthdate = inputValue;
         break;
       case 'konkatsuStatus':
-        updatedUserData.konkatsuStatus = trimmedValue;
+        // 婚活ステータスをEnum値にマッピング
+        let konkatsuStatus = '';
+        if (inputValue.includes('初心者') || inputValue === '1') {
+          konkatsuStatus = 'beginner';
+        } else if (inputValue.includes('経験あり') || inputValue === '2') {
+          konkatsuStatus = 'experienced';
+        } else if (inputValue.includes('再チャレンジ') || inputValue === '3') {
+          konkatsuStatus = 'returning';
+        } else {
+          // デフォルト値
+          konkatsuStatus = 'beginner';
+        }
+        updatedUserData.konkatsuStatus = konkatsuStatus;
         break;
       case 'optional_confirm':
         // ユーザーの選択を保存（実際の処理は別途実装）
         break;
       case 'occupation':
-        updatedUserData.occupation = trimmedValue;
+        updatedUserData.occupation = inputValue;
         break;
       case 'birthplace':
-        updatedUserData.birthplace = trimmedValue;
+        updatedUserData.birthplace = inputValue;
         break;
       case 'location':
-        updatedUserData.location = trimmedValue;
+        updatedUserData.location = inputValue;
         break;
       case 'hobbies':
-        updatedUserData.hobbies = trimmedValue;
+        updatedUserData.hobbies = inputValue;
         break;
       case 'holiday_style':
-        updatedUserData.holidayStyle = trimmedValue;
+        updatedUserData.holidayStyle = inputValue;
+        // holiday_style完了後は直接登録処理を実行
+        handleComplete(updatedUserData);
+        return; // 処理を終了
+      case 'complete':
+        // 登録完了処理は別途実装
         break;
     }
     setUserData(updatedUserData);
 
     // Get next step and response
     const nextStep = getNextStep(currentStep, mode);
-    const response = getStepResponse(currentStep, trimmedValue, nextStep, updatedUserData);
+    const response = getStepResponse(currentStep, inputValue, nextStep, updatedUserData);
 
     setTimeout(() => {
       // 空文字でない場合のみメッセージを表示
@@ -209,7 +248,7 @@ export default function AuthChat() {
         // optional_confirmステップの特別処理
         if (currentStep === 'optional_confirm') {
           const isYes = ['はい', 'yes', 'y', '1', '入力', 'する'].some(option => 
-            trimmedValue.toLowerCase().includes(option.toLowerCase())
+            inputValue.toLowerCase().includes(option.toLowerCase())
           );
           if (isYes) {
             setCurrentStep('occupation');
@@ -225,6 +264,23 @@ export default function AuthChat() {
         handleComplete(updatedUserData);
       }
     }, 1000);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
+
+    const trimmedValue = inputValue.trim();
+    setInputValue('');
+    setValidationError('');
+
+    // Add user message
+    addUserMessage(trimmedValue);
+
+    // 処理を実行
+    setTimeout(() => {
+      handleInputProcessing(trimmedValue);
+    }, 500);
   };
 
   const getStepResponse = (step: AuthStep, input: string, nextStep: AuthStep | null, userData: UserData): string => {
@@ -253,7 +309,7 @@ export default function AuthChat() {
           ageMessage = `${actualAge}歳！若々しくて素晴らしいですね 🌟\nこれからたくさんの可能性が広がっています。`;
         }
         
-        return `${ageMessage}\n\n最後に、現在の婚活状況を教えてください：\n1️⃣ 婚活初心者です\n2️⃣ 婚活経験があります\n3️⃣ 再チャレンジです\n\n番号または内容で答えてください。`;
+        return `${ageMessage}\n\n婚活の経験を教えてください。\n以下から選んでください：\n\n1️⃣ 初心者です\n2️⃣ 経験があります\n3️⃣ 再チャレンジです\n\n数字入力でも、ボタンでも、お好きな方法でどうぞ！`;
 
       case 'konkatsuStatus':
         let status = '';
@@ -272,7 +328,7 @@ export default function AuthChat() {
         if (isYes) {
           return 'ありがとうございます！\n\nまずは、お仕事を教えてください。\n（例：会社員、エンジニア、営業など）';
         } else {
-          return `承知いたしました！\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。`;
+          return ''; // 登録処理中なので空文字を返す
         }
       case 'occupation':
         // 職業に応じたメッセージを生成
@@ -307,11 +363,13 @@ export default function AuthChat() {
       case 'hobbies':
         return `${input}がお好きなんですね！素敵な趣味です ✨\n\n最後に、休日の過ごし方を教えてください。\n（例：家でゆっくり、友達と遊ぶ、趣味に没頭など）`;
       case 'holiday_style':
-        return `${input}！素敵な休日の過ごし方です 🌟\n\n登録が完了しました！🎊\n${userData.name}さんの婚活成功を心から応援しています。`;
+        return ''; // 登録処理中なので空文字を返す
       case 'email_confirm':
         return `メールアドレスを確認しました。\n\nパスワードを入力してください。`;
       case 'password_confirm':
         return ''  // ログイン処理中なので空文字を返す
+      case 'complete':
+        return ''  // 登録処理中なので空文字を返す
       default:
         return 'ありがとうございます！';
     }
@@ -319,7 +377,30 @@ export default function AuthChat() {
 
   const handleComplete = async (finalUserData: UserData) => {
     if (mode == 'register'){
-      const res = await register(finalUserData);
+      try {
+        const res = await register(finalUserData);
+        console.log('Registration response:', res);
+        
+        if (res.success) {
+          // 登録成功時のメッセージを表示
+          setTimeout(() => {
+            addBotMessage('登録が完了しました！🎊\n\nMiraimへようこそ！\n素敵な出会いが待っていますよ ✨');
+          }, 500);
+          
+        } else {
+          // 登録失敗時のメッセージを表示
+          setTimeout(() => {
+            addBotMessage(`申し訳ありません。登録に失敗しました。\n${res.error}\n\nもう一度お試しください。`);
+          }, 500);
+        }
+        
+      } catch (error) {
+        console.error('Registration error:', error);
+        // 登録失敗時のメッセージを表示
+        setTimeout(() => {
+          addBotMessage('申し訳ありません。登録に失敗しました。\nもう一度お試しください。');
+        }, 500);
+      }
       return;
     }
 
@@ -334,11 +415,11 @@ export default function AuthChat() {
       }, 500);
       setTimeout(() => {
         router.push("/mypage");
-      }, 3000);
+      }, 5000); // ログイン時は5秒後に遷移
     } else {
       // ログイン失敗時のメッセージを表示
       setTimeout(() => {
-        addBotMessage(`あら、パスワードが一致しないようです 😅\n\nもう一度確認してお試しください。\nパスワードを忘れてしまった場合は、「忘れた」と教えてくださいね。`);
+        addBotMessage(`あら、パスワードが一致しないようです 😅\n\nもう一度確認してお試しください。\nパスワードを忘れてしまった場合は、「パスワードを忘れた方」を押して教えてくださいね。`);
         setCurrentStep('password_confirm');
       }, 500);
     }
@@ -357,6 +438,19 @@ export default function AuthChat() {
         setCurrentStep('email_confirm');
       }, 1000);
     }
+  };
+
+  const handleForgotPassword = () => {
+    // パスワードを忘れた場合の処理を直接実行
+    setTimeout(() => {
+      addBotMessage('大丈夫です！よくあることです 😊\n\nパスワードリセットのメールをお送りします。\nメールをご確認いただき、新しいパスワードを設定してください。');
+    }, 500);
+    setTimeout(() => {
+      addBotMessage('しばらくお待ちください...');
+    }, 3000);
+    setTimeout(() => {
+      addBotMessage('メールを送信しました！📧\nメールボックスをご確認ください。');
+    }, 5000);
   };
 
   const handleVoiceInput = () => {
@@ -435,7 +529,11 @@ export default function AuthChat() {
         <div className="max-w-2xl mx-auto h-full flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-4 chat-container">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                onButtonClick={handleButtonClick}
+              />
             ))}
             
             {isLoading && (
@@ -467,13 +565,14 @@ export default function AuthChat() {
               
               <div className="flex items-end space-x-2">
                 <div className="flex-1">
-                  <InputField
-                    ref={inputRef}
-                    value={inputValue}
-                    onChange={setInputValue}
-                    currentStep={currentStep}
-                    disabled={isLoading}
-                  />
+                                     <InputField
+                     ref={inputRef}
+                     value={inputValue}
+                     onChange={setInputValue}
+                     currentStep={currentStep}
+                     disabled={isLoading}
+                     onForgotPassword={handleForgotPassword}
+                   />
                 </div>
                 
                 <button
